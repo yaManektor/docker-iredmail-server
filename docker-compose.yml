@@ -1,0 +1,32 @@
+services:
+  iredmail:
+    build: .
+    image: my-iredmail:clamav-1.4.3
+    container_name: iredmail_core
+    hostname: ${HOSTNAME}
+    domainname: ${DOMAIN}
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "25:25"     # SMTP
+      - "465:465"   # SMTPS
+      - "587:587"   # Submission
+      - "110:110"   # POP3
+      - "995:995"   # POP3S
+      - "143:143"   # IMAP
+      - "993:993"   # IMAPS
+      - "80:80"     # HTTP
+      - "443:443"   # HTTPS
+    volumes:
+      - ${DOCKER_VOLUMES_PATH}/mysql:/var/lib/mysql            # Internal MariaDB
+      - ${DOCKER_VOLUMES_PATH}/mail:/var/vmail/vmail1          # Mailboxes
+      - ${DOCKER_VOLUMES_PATH}/custom:/opt/iredmail/custom     # Customizations (if needed)
+      - ${DOCKER_VOLUMES_PATH}/ssl:/opt/iredmail/ssl           # Certificates (if needed)
+      - ${DOCKER_VOLUMES_PATH}/clamav:/var/lib/clamav
+      - ${DOCKER_VOLUMES_PATH}/sa_rules:/var/lib/spamassassin
+      - ${DOCKER_VOLUMES_PATH}/postfix_queue:/var/spool/postfix
+
+networks:
+  default:
+    driver: bridge
