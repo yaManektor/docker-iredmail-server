@@ -1,1 +1,6 @@
 .env
+
+custom/**
+!custom/**/
+!custom/amavisd/50-user
+!custom/postfix/master.cf

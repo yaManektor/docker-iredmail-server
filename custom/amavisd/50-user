@@ -1,0 +1,1 @@
+$clamd_sock = "/tmp/clamd.socket";
