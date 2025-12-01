@@ -1,6 +1,9 @@
 .env
+data/
 
 custom/**
 !custom/**/
 !custom/amavisd/50-user
 !custom/postfix/master.cf
+!custom/nginx/maintenance/**
+!custom/nginx/sites-conf.d/**

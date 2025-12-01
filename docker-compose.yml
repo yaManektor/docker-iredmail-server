@@ -2,7 +2,7 @@ services:
   iredmail:
     build: .
     image: my-iredmail:clamav-1.4.3
-    container_name: iredmail_core
+    container_name: ${IREDMAIL_CONTAINER_NAME}
     hostname: ${HOSTNAME}
     domainname: ${DOMAIN}
     restart: unless-stopped
