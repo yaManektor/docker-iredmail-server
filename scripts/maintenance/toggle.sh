@@ -40,6 +40,60 @@ safe_rm() {
     fi
 }
 
+run_in_container() {
+    local cmd="$1"
+    if [ "${IN_CONTAINER}" -eq 1 ]; then
+        eval "${cmd}"
+    else
+        if [ -n "${IREDMAIL_CONTAINER_NAME:-}" ]; then
+            local DOCKER_BIN="docker"
+            if ! ${DOCKER_BIN} exec "${IREDMAIL_CONTAINER_NAME}" true >/dev/null 2>&1; then
+                DOCKER_BIN="sudo docker"
+            fi
+            ${DOCKER_BIN} exec "${IREDMAIL_CONTAINER_NAME}" bash -c "${cmd}"
+        else
+            echo "⚠️ Cannot execute command: IREDMAIL_CONTAINER_NAME is not specified."
+            return 1
+        fi
+    fi
+}
+
+stop_dovecot() {
+    echo "🛑 Stopping Dovecot..."
+    if run_in_container "/etc/init.d/dovecot stop" 2>/dev/null; then
+        echo "✅ Dovecot stopped"
+    else
+        echo "❌ Failed to stop Dovecot (might be already stopped)"
+    fi
+}
+
+start_dovecot() {
+    echo "➡️ Starting Dovecot..."
+    if run_in_container "/etc/init.d/dovecot start" 2>/dev/null; then
+        echo "✅ Dovecot started"
+    else
+        echo "❌ Failed to start Dovecot"
+    fi
+}
+
+hold_postfix_queue() {
+    echo "⏸️ Holding Postfix queue..."
+    if run_in_container "postsuper -h ALL" 2>/dev/null; then
+        echo "✅ Postfix queue on hold"
+    else
+        echo "❌ Failed to hold Postfix queue"
+    fi
+}
+
+release_postfix_queue() {
+    echo "➡️ Releasing Postfix queue..."
+    if run_in_container "postsuper -H ALL" 2>/dev/null; then
+        echo "✅ Postfix queue released"
+    else
+        echo "❌ Failed to release Postfix queue"
+    fi
+}
+
 toggle_flag() {
     if [ "${IN_CONTAINER}" -eq 1 ]; then
         mkdir -p "${BASE}"
@@ -63,34 +117,35 @@ toggle_flag() {
 }
 
 reload_nginx() {
-    if [ "${IN_CONTAINER}" -eq 1 ]; then
-        if nginx -t >/dev/null 2>&1; then
-            nginx -s reload
-            echo "♻️ Nginx reloaded inside container"
-        else
-            echo "❌ Nginx config test failed inside container"
-            exit 1
-        fi
+    echo "🔄 Testing Nginx configuration..."
+
+    if ! run_in_container "nginx -t" >/dev/null 2>&1; then
+        echo "❌ Nginx config test failed"
+        exit 1
+    fi
+
+    if run_in_container "nginx -s reload" >/dev/null 2>&1; then
+        echo "♻️ Nginx reloaded"
     else
-        if [ -n "${IREDMAIL_CONTAINER_NAME:-}" ]; then
-            DOCKER_BIN="docker"
-
-            if ! ${DOCKER_BIN} exec "${IREDMAIL_CONTAINER_NAME}" nginx -t >/dev/null 2>&1; then
-                DOCKER_BIN="sudo docker"
-            fi
-
-            if ${DOCKER_BIN} exec "${IREDMAIL_CONTAINER_NAME}" nginx -t >/dev/null 2>&1; then
-                ${DOCKER_BIN} exec "${IREDMAIL_CONTAINER_NAME}" nginx -s reload
-                echo "♻️ Nginx reloaded in container: ${IREDMAIL_CONTAINER_NAME}"
-            else
-                echo "❌ Nginx config test failed in container: ${IREDMAIL_CONTAINER_NAME}"
-                exit 1
-            fi
-        else
-            echo "⚠️ Nginx was not reloaded because IREDMAIL_CONTAINER_NAME is not specified."
-        fi
+        echo "❌ Failed to reload Nginx"
+        exit 1
     fi
 }
 
 toggle_flag
+
+if [ -f "${FLAG}" ]; then
+    MAINTENANCE_ON=1
+else
+    MAINTENANCE_ON=0
+fi
+
+if [ ${MAINTENANCE_ON} -eq 1 ]; then
+    stop_dovecot
+    hold_postfix_queue
+else
+    release_postfix_queue
+    start_dovecot
+fi
+
 reload_nginx
