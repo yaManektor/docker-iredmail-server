@@ -50,7 +50,7 @@ run_in_container() {
             if ! ${DOCKER_BIN} exec "${IREDMAIL_CONTAINER_NAME}" true >/dev/null 2>&1; then
                 DOCKER_BIN="sudo docker"
             fi
-            ${DOCKER_BIN} exec "${IREDMAIL_CONTAINER_NAME}" bash -c "${cmd}"
+            ${DOCKER_BIN} exec "${IREDMAIL_CONTAINER_NAME}" bash -c "${cmd}" >/dev/null 2>&1
         else
             echo "⚠️ Cannot execute command: IREDMAIL_CONTAINER_NAME is not specified."
             return 1
@@ -60,7 +60,7 @@ run_in_container() {
 
 stop_dovecot() {
     echo "🛑 Stopping Dovecot..."
-    if run_in_container "/etc/init.d/dovecot stop" 2>/dev/null; then
+    if run_in_container "supervisorctl stop dovecot" 2>/dev/null; then
         echo "✅ Dovecot stopped"
     else
         echo "❌ Failed to stop Dovecot (might be already stopped)"
@@ -69,7 +69,7 @@ stop_dovecot() {
 
 start_dovecot() {
     echo "➡️ Starting Dovecot..."
-    if run_in_container "/etc/init.d/dovecot start" 2>/dev/null; then
+    if run_in_container "supervisorctl start dovecot" 2>/dev/null; then
         echo "✅ Dovecot started"
     else
         echo "❌ Failed to start Dovecot"
