@@ -19,10 +19,11 @@ services:
       - "80:80"     # HTTP
       - "443:443"   # HTTPS
     volumes:
-      - ${DOCKER_VOLUMES_PATH}/mysql:/var/lib/mysql            # Internal MariaDB
-      - ${DOCKER_VOLUMES_PATH}/mail:/var/vmail/vmail1          # Mailboxes
-      - ${DOCKER_VOLUMES_PATH}/custom:/opt/iredmail/custom     # Customizations (if needed)
-      - ${DOCKER_VOLUMES_PATH}/ssl:/opt/iredmail/ssl           # Certificates (if needed)
+      - ${DOCKER_VOLUMES_PATH}/mysql:/var/lib/mysql
+      - ${DOCKER_VOLUMES_PATH}/mail:/var/vmail/vmail1
+      - ${DOCKER_VOLUMES_PATH}/custom:/opt/iredmail/custom
+      - ${DOCKER_VOLUMES_PATH}/custom/php/99-custom.ini:/etc/php/7.4/fpm/conf.d/99-custom.ini:ro
+      - ${DOCKER_VOLUMES_PATH}/ssl:/opt/iredmail/ssl
       - ${DOCKER_VOLUMES_PATH}/clamav:/var/lib/clamav
       - ${DOCKER_VOLUMES_PATH}/sa_rules:/var/lib/spamassassin
       - ${DOCKER_VOLUMES_PATH}/postfix_queue:/var/spool/postfix
